@@ -10,7 +10,6 @@ import { Notification } from './Notification/Notification';
 export class App extends Component {
   state = {
     page: 1,
-    totalPages: 1,
     query: '',
     images: [],
     error: '',
@@ -18,12 +17,13 @@ export class App extends Component {
     showModal: false,
     url: '',
     tag: '',
-    isImagesFound: false,
+    showNoMassage: false,
+    showBtn: false,
   };
 
   componentDidUpdate(prevProps, prevState) {
-    const { query } = this.state;
-    if (query !== prevState.query) {
+    const { query, page } = this.state;
+    if (query !== prevState.query || page !== prevState.page) {
       this.fetchImages()
         .catch(error => this.setState({ error }))
         .finally(() => this.setState({ loader: false }));
@@ -36,34 +36,25 @@ export class App extends Component {
 
   fetchImages = () => {
     const { query, page } = this.state;
-    this.setState({ loader: true });
-    return findImage(query, page).then(data => {
-      this.setState(prevState => ({
-        images: [...prevState.images, ...data.hits],
-        page: prevState.page + 1,
-        error: '',
-        isImagesFound: data.hits.length > 0,
-      }));
-      this.setTotalPages(data.totalHits);
-    });
-  };
-
-  setTotalPages = totalHits => {
-    this.setState({
-      totalPages: Math.ceil(totalHits / 12),
-    });
+    this.setState({ loader: true, showNoMassage: false });
+    return findImage(query, page)
+      .then(({ hits, totalHits }) => {
+        this.setState(prevState => ({
+          images: [...prevState.images, ...hits],
+          error: '',
+          showNoMassage: hits.length === 0,
+          showBtn:
+            hits.length > 0 && this.state.page < Math.ceil(totalHits / 12),
+        }));
+      })
+      .catch(error => this.setState({ error }))
+      .finally(() => this.setState({ loader: false }));
   };
 
   handleOnButtonClick = () => {
-    this.fetchImages()
-      .then(() =>
-        window.scrollTo({
-          top: document.documentElement.scrollHeight,
-          behavior: 'smooth',
-        })
-      )
-      .catch(error => this.setState({ error }))
-      .finally(() => this.setState({ loader: false }));
+    this.setState(prevState => ({
+      page: prevState.page + 1,
+    }));
   };
 
   handleFormData = ({ query }) => {
@@ -113,15 +104,11 @@ export class App extends Component {
         {Boolean(images.length) && (
           <ImageGallery images={images} onClick={this.handleImageClick} />
         )}
-        {!Boolean(images.length) && this.state.totalPages === 0 && (
-          <Notification message="No images found" />
-        )}
+        {this.state.showNoMassage && <Notification message="No images found" />}
         {loader && !showModal && <Loader />}
-        {!loader &&
-          Boolean(images.length) &&
-          this.state.page <= this.state.totalPages && (
-            <Button onClick={this.handleOnButtonClick} />
-          )}
+        {!loader && this.state.showBtn && (
+          <Button onClick={this.handleOnButtonClick} />
+        )}
       </div>
     );
   }
