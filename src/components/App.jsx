@@ -39,13 +39,16 @@ export class App extends Component {
     this.setState({ loader: true, showNoMassage: false });
     return findImage(query, page)
       .then(({ hits, totalHits }) => {
-        this.setState(prevState => ({
-          images: [...prevState.images, ...hits],
-          error: '',
-          showNoMassage: hits.length === 0,
-          showBtn:
-            hits.length > 0 && this.state.page < Math.ceil(totalHits / 12),
-        }));
+        if (hits.length === 0) {
+          this.setState({ showNoMassage: true, showBtn: false });
+        } else {
+          this.setState(prevState => ({
+            images: [...prevState.images, ...hits],
+            error: '',
+            showBtn: this.state.page < Math.ceil(totalHits / 12),
+            showNoMassage: false,
+          }));
+        }
       })
       .catch(error => this.setState({ error }))
       .finally(() => this.setState({ loader: false }));
@@ -66,12 +69,7 @@ export class App extends Component {
     });
   };
 
-  handleImageClick = ({ target }) => {
-    if (target.nodeName !== 'IMG') {
-      return;
-    }
-    const { url } = target.dataset;
-    const tag = target.alt;
+  handleImageClick = (url = '', tag = '') => {
     this.setState({
       url,
       tag,
@@ -82,9 +80,6 @@ export class App extends Component {
 
   toggleModal = () => {
     this.setState(prevState => ({ showModal: !prevState.showModal }));
-    document.documentElement.style.overflow = this.state.showModal
-      ? 'auto'
-      : 'hidden';
   };
 
   hideLoaderInModal = () => this.setState({ loader: false });

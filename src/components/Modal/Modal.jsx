@@ -6,10 +6,12 @@ const modalRoot = document.getElementById('modal-root');
 export class Modal extends Component {
   componentDidMount() {
     window.addEventListener('keydown', this.closeModalEsc);
+    document.documentElement.style.overflow = 'hidden';
   }
 
   componentWillUnmount() {
     window.removeEventListener('keydown', this.closeModalEsc);
+    document.documentElement.style.overflow = 'auto';
   }
 
   closeModalEsc = e => {
